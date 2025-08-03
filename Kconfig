@@ -1,0 +1,29 @@
+# Copyright (c) 2025 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+config ZMK_ESB
+	bool "Enable ESB (Enhanced ShockBurst) transport"
+	depends on UART_INTERRUPT_DRIVEN
+	help
+	  Enable ESB transport for sending HID reports via UART to BLESB coprocessor.
+	  BLESB forwards reports via Enhanced ShockBurst to DONGLE for low-latency
+	  gaming performance.
+
+if ZMK_ESB
+
+config ZMK_ESB_INIT_PRIORITY
+	int "ESB transport initialization priority"
+	default 80
+	help
+	  Initialization priority for ESB transport. Should be after UART
+	  but before endpoint selection.
+
+config ZMK_ESB_LOG_LEVEL
+	int "ESB transport log level"
+	default 3
+	range 0 4
+	help
+	  Log level for ESB transport debugging:
+	  0 = Off, 1 = Error, 2 = Warning, 3 = Info, 4 = Debug
+
+endif # ZMK_ESB
