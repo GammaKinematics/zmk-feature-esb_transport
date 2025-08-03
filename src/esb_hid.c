@@ -4,8 +4,8 @@
 #include <zephyr/logging/log.h>
 
 #include <zmk/hid.h>
-#include <zmk/esb_hid.h>
-#include <zmk/events/esb_conn_state_changed.h>
+#include <zmk_feature_esb_transport/esb_hid.h>
+#include <zmk_feature_esb_transport/events/esb_conn_state_changed.h>
 
 #if IS_ENABLED(CONFIG_ZMK_ESB)
 
@@ -143,15 +143,15 @@ static void monitor_esb_connection(void) {
  * Uses same HID report format as USB transport
  */
 int zmk_esb_hid_send_keyboard_report(void) {
-    size_t len;
-    uint8_t *report = get_keyboard_report(&len);
+    struct zmk_hid_keyboard_report *report = zmk_hid_get_keyboard_report();
     
     if (!report) {
         LOG_ERR("Failed to get keyboard report");
         return -EINVAL;
     }
 
-    return zmk_esb_hid_send_packet(HID_PACKET_TYPE_KEYBOARD, report, len);
+    return zmk_esb_hid_send_packet(HID_PACKET_TYPE_KEYBOARD, 
+                                   (uint8_t *)&report->body, sizeof(report->body));
 }
 
 /**
