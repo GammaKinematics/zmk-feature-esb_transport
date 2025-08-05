@@ -1,5 +1,6 @@
 if(CONFIG_ZMK_ESB)
     target_sources(app PRIVATE
+        src/esb.c
         src/esb_hid.c
         src/events/esb_conn_state_changed.c
     )

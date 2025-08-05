@@ -12,10 +12,17 @@ config ZMK_ESB
 if ZMK_ESB
 
 config ZMK_ESB_INIT_PRIORITY
-	int "ESB transport initialization priority"
+	int "ESB initialization priority"
 	default 80
 	help
-	  Initialization priority for ESB transport. Should be after UART
+	  Initialization priority for ESB. Should be after UART
+	  but before endpoint selection.
+
+config ZMK_ESB_HID_INIT_PRIORITY
+	int "ESB HID initialization priority"
+	default 81
+	help
+	  Initialization priority for ESB HID. Should be after UART
 	  but before endpoint selection.
 
 config ZMK_ESB_LOG_LEVEL
