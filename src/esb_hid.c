@@ -23,39 +23,40 @@ struct hid_packet_header {
 #define HID_PACKET_TYPE_CONSUMER 2
 #define HID_PACKET_TYPE_MOUSE    3
 
-// UART transmission utility for HID data
-static int uart_esb_send(const uint8_t *data, size_t len) {
-    if (!esb_uart_dev || !device_is_ready(esb_uart_dev)) {
-        return -ENODEV;
-    }
-    
-    // Simple protocol: send data directly to UART for BLESB to forward via ESB
-    for (size_t i = 0; i < len; i++) {
-        uart_poll_out(esb_uart_dev, data[i]);
-    }
-    
-    return 0;
-}
-
-// Send HID report with header
+// Send HID report with header in SINGLE packet - much simpler for BLESB
 static int zmk_esb_hid_send_report(uint8_t type, const uint8_t *report, size_t len) {
     if (!zmk_esb_active_profile_is_connected()) {
         return -ENOTCONN;
     }
     
-    // Create packet with header
-    struct hid_packet_header header = {
-        .type = type,
-        .length = (uint8_t)len
-    };
-    
-    // Send header + data
-    int err = uart_esb_send((uint8_t *)&header, sizeof(header));
-    if (err) {
-        return err;
+    if (!esb_uart_dev || !device_is_ready(esb_uart_dev)) {
+        return -ENODEV;
     }
     
-    return uart_esb_send(report, len);
+    // Create complete packet: header + data in single buffer
+    uint8_t packet[64];  // Max ESB payload is 32, so 64 is plenty
+    struct hid_packet_header *header = (struct hid_packet_header *)packet;
+    
+    // Validate packet size
+    size_t total_len = sizeof(struct hid_packet_header) + len;
+    if (total_len > sizeof(packet)) {
+        LOG_ERR("HID packet too large: %zu bytes", total_len);
+        return -EINVAL;
+    }
+    
+    // Build complete packet
+    header->type = type;
+    header->length = (uint8_t)len;
+    memcpy(&packet[sizeof(struct hid_packet_header)], report, len);
+    
+    // Send complete packet in ONE UART operation
+    LOG_DBG("Sending ESB HID packet: type=%d, len=%d, total=%zu", type, len, total_len);
+    
+    for (size_t i = 0; i < total_len; i++) {
+        uart_poll_out(esb_uart_dev, packet[i]);
+    }
+    
+    return 0;
 }
 
 // Public HID transmission functions
@@ -96,7 +97,7 @@ static int esb_hid_init(void) {
         return -ENODEV;
     }
     
-    LOG_INF("ESB HID transport initialized");
+    LOG_INF("ESB HID transport initialized (single-packet mode)");
     return 0;
 }
 
